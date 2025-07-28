@@ -46,20 +46,13 @@ services:
   typebot-builder:
     <<: *typebot-common
     image: baptistearno/typebot-builder:latest
-    ports:
-      - "8080:3000"
 
   typebot-viewer:
     <<: *typebot-common
     image: baptistearno/typebot-viewer:latest
-    ports:
-      - "8081:3000"
   minio:
     image: minio/minio
     command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     environment:
       - MINIO_ROOT_USER=minio
       - MINIO_ROOT_PASSWORD=minio123
