@@ -7,8 +7,6 @@ x-typebot-common: &typebot-common
       condition: service_healthy
     minio:
       condition: service_healthy
-  networks:
-    - typebot-network
   env_file: .env
   environment:
     REDIS_URL: redis://typebot-redis:6379
@@ -27,8 +25,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    networks:
-      - typebot-network
 
   typebot-redis:
     image: redis:alpine
@@ -42,8 +38,6 @@ services:
       timeout: 3s
     volumes:
       - redis-data:/data
-    networks:
-      - typebot-network
 
   typebot-builder:
     <<: *typebot-common
@@ -80,10 +74,7 @@ services:
       /usr/bin/mc anonymous set public minio/typebot/public;
       exit 0;
       "
-      
-networks:
-  typebot-network:
-    driver: bridge
+    restart: on-failure:1
 
 volumes:
   db-data:
