@@ -1,0 +1,91 @@
+x-typebot-common: &typebot-common
+  restart: always
+  depends_on:
+    typebot-redis:
+      condition: service_healthy
+    typebot-db:
+      condition: service_healthy
+    minio:
+      condition: service_healthy
+  networks:
+    - typebot-network
+  env_file: .env
+  environment:
+    REDIS_URL: redis://typebot-redis:6379
+
+services:
+  typebot-db:
+    image: postgres:16
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=typebot
+      - POSTGRES_PASSWORD=typebot
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - typebot-network
+
+  typebot-redis:
+    image: redis:alpine
+    restart: always
+    command: --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    volumes:
+      - redis-data:/data
+    networks:
+      - typebot-network
+
+  typebot-builder:
+    <<: *typebot-common
+    image: baptistearno/typebot-builder:latest
+    ports:
+      - "8080:3000"
+
+  typebot-viewer:
+    <<: *typebot-common
+    image: baptistearno/typebot-viewer:latest
+    ports:
+      - "8081:3000"
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio123
+    volumes:
+      - s3_data:/data
+  # This service just make sure a bucket with the right policies is created
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      /usr/bin/mc alias set minio http://minio:9000 minio minio123;
+      /usr/bin/mc mb --ignore-existing minio/typebot;
+      /usr/bin/mc anonymous set public minio/typebot/public;
+      exit 0;
+      "
+      
+networks:
+  typebot-network:
+    driver: bridge
+
+volumes:
+  db-data:
+  redis-data:
+  s3_data:
