@@ -5,8 +5,6 @@ x-typebot-common: &typebot-common
       condition: service_healthy
     typebot-db:
       condition: service_healthy
-    minio:
-      condition: service_healthy
   env_file: .env
   environment:
     REDIS_URL: redis://typebot-redis:6379
