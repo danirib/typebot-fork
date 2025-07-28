@@ -5,6 +5,8 @@ x-typebot-common: &typebot-common
       condition: service_healthy
     typebot-db:
       condition: service_healthy
+  networks:
+    - typebot-network
   env_file: .env
   environment:
     REDIS_URL: redis://typebot-redis:6379
@@ -23,6 +25,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - typebot-network
 
   typebot-redis:
     image: redis:alpine
@@ -36,6 +40,8 @@ services:
       timeout: 3s
     volumes:
       - redis-data:/data
+    networks:
+      - typebot-network
 
   typebot-builder:
     <<: *typebot-common
@@ -73,6 +79,10 @@ services:
       exit 0;
       "
     restart: on-failure:1
+      
+networks:
+  typebot-network:
+    driver: bridge
 
 volumes:
   db-data:
